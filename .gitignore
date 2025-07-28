@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# TensorFlow / JAX binaries
+*.pb
+*.ckpt
+*.dylib
+*.so
+
+# Node
+node_modules/
+
+# Misc
+.DS_Store
+.env
