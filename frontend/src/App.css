@@ -122,16 +122,43 @@
 }
 
 .sign-display {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: bold;
   color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  animation: pulse 2s infinite;
 }
 
 .phrase-display {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: #ff6b6b;
   text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.detected-sign {
+  background: rgba(0, 255, 136, 0.15) !important;
+  border: 2px solid #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.detected-phrase {
+  background: rgba(255, 107, 107, 0.15) !important;
+  border: 2px solid #ff6b6b;
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 8px rgba(255, 107, 107, 0.5); }
+  to { text-shadow: 0 0 15px rgba(255, 107, 107, 0.8); }
 }
 
 .phrase-item {

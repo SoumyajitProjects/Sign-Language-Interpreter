@@ -328,12 +328,30 @@ function App() {
         </div>
         
         <div className="results">
-          <h2>Detection Status</h2>
+          <h2>Detection Results</h2>
           {detectionResult ? (
             <div className="result-content">
               <div className="result-item">
                 <strong>Status:</strong> {detectionResult.hands_detected ? '🟢 Detecting' : '🔴 No Hands'}
               </div>
+              
+              {detectionResult.sign && detectionResult.sign !== 'Unknown' && (
+                <div className="result-item detected-sign">
+                  <strong>Detected Sign:</strong> 
+                  <span className="sign-display">
+                    {detectionResult.sign}
+                  </span>
+                </div>
+              )}
+              
+              {detectionResult.phrase && detectionResult.phrase !== 'Unknown' && (
+                <div className="result-item detected-phrase">
+                  <strong>Meaning:</strong> 
+                  <span className="phrase-display">
+                    {detectionResult.phrase}
+                  </span>
+                </div>
+              )}
               
               {detectionResult.confidence > 0 && (
                 <div className="result-item">
@@ -362,31 +380,40 @@ function App() {
           <h3>Try These Signs:</h3>
           <div className="sign-examples">
             <div className="sign-example">
-              <strong>A:</strong> Make a fist
+              <strong>1️⃣:</strong> Point with index finger only
             </div>
             <div className="sign-example">
-              <strong>B:</strong> Point with index finger
+              <strong>2️⃣:</strong> Index + middle fingers (separated)
             </div>
             <div className="sign-example">
-              <strong>V:</strong> Peace sign (index + middle)
+              <strong>3️⃣:</strong> Index + middle + ring fingers
             </div>
             <div className="sign-example">
-              <strong>W:</strong> Three fingers up
+              <strong>4️⃣:</strong> All fingers except thumb
             </div>
             <div className="sign-example">
               <strong>5:</strong> All fingers extended
             </div>
             <div className="sign-example">
-              <strong>I Love You:</strong> Thumb + index + pinky
-            </div>
-            <div className="sign-example">
-              <strong>👍:</strong> Thumbs up
+              <strong>✌️:</strong> Peace sign (index + middle close)
             </div>
             <div className="sign-example">
               <strong>👌:</strong> OK sign (thumb + index circle)
             </div>
             <div className="sign-example">
               <strong>🤘:</strong> Rock on (index + pinky)
+            </div>
+            <div className="sign-example">
+              <strong>👍:</strong> Thumbs up
+            </div>
+            <div className="sign-example">
+              <strong>I Love You:</strong> Thumb + index + pinky
+            </div>
+            <div className="sign-example">
+              <strong>A:</strong> Make a fist
+            </div>
+            <div className="sign-example">
+              <strong>L:</strong> Thumb + index form L shape
             </div>
           </div>
         </div>

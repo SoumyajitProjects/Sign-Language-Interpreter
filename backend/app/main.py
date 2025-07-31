@@ -215,12 +215,9 @@ def detect_advanced_signs(extended_fingers, thumb_extended, num_extended,
     
     [index_extended, middle_extended, ring_extended, pinky_extended] = extended_fingers
     
-    # Phrase Detection - Check these FIRST to avoid conflicts
+    # Most Specific Signs First - Check these FIRST to avoid conflicts
     if detect_i_love_you(landmarks):
         return "I", "I Love You", 0.95, 0.94
-    
-    elif detect_thumbs_up(landmarks):
-        return "👍", "Thumbs Up", 0.9, 0.88
     
     elif detect_ok_sign(landmarks):
         return "👌", "OK", 0.9, 0.87
@@ -229,7 +226,24 @@ def detect_advanced_signs(extended_fingers, thumb_extended, num_extended,
         return "🤘", "Rock On", 0.85, 0.83
     
     elif detect_peace_sign(landmarks):
-        return "V", "Peace", 0.95, 0.92
+        return "✌️", "Peace", 0.95, 0.92
+    
+    # Number Detection - More specific checks
+    elif detect_number_one(landmarks):
+        return "1️⃣", "Number One", 0.9, 0.88
+    
+    elif detect_number_two(landmarks):
+        return "2️⃣", "Number Two", 0.9, 0.87
+    
+    elif detect_number_three(landmarks):
+        return "3️⃣", "Number Three", 0.9, 0.86
+    
+    elif detect_number_four(landmarks):
+        return "4️⃣", "Number Four", 0.9, 0.85
+    
+    # Simple gestures last (most likely to cause false positives)
+    elif detect_thumbs_up(landmarks):
+        return "👍", "Thumbs Up", 0.9, 0.88
     
     # ASL Alphabet Detection - More comprehensive
     if num_extended == 0 and not thumb_extended:
@@ -348,13 +362,43 @@ def detect_thumbs_up(landmarks):
     
     thumb_tip = landmarks[4]
     thumb_ip = landmarks[3]
+    thumb_mcp = landmarks[2]
     wrist = landmarks[0]
     
+    # Get other finger positions
+    index_tip = landmarks[8]
+    index_pip = landmarks[6]
+    index_mcp = landmarks[5]
+    middle_tip = landmarks[12]
+    middle_pip = landmarks[10]
+    middle_mcp = landmarks[9]
+    ring_tip = landmarks[16]
+    ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
+    pinky_tip = landmarks[20]
+    pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
+    
+    def is_finger_folded(tip, pip, mcp):
+        # For a folded finger, tip should be below or close to pip
+        return tip["y"] >= pip["y"] - 0.02
+    
     # Thumb should be pointing up (y coordinate decreasing)
-    thumb_extended = thumb_tip["y"] < thumb_ip["y"]
+    thumb_extended = thumb_tip["y"] < thumb_ip["y"] < thumb_mcp["y"]
     thumb_above_wrist = thumb_tip["y"] < wrist["y"]
     
-    return thumb_extended and thumb_above_wrist
+    # Other fingers should be folded down
+    index_folded = is_finger_folded(index_tip, index_pip, index_mcp)
+    middle_folded = is_finger_folded(middle_tip, middle_pip, middle_mcp)
+    ring_folded = is_finger_folded(ring_tip, ring_pip, ring_mcp)
+    pinky_folded = is_finger_folded(pinky_tip, pinky_pip, pinky_mcp)
+    
+    return (thumb_extended and 
+            thumb_above_wrist and 
+            index_folded and 
+            middle_folded and 
+            ring_folded and 
+            pinky_folded)
 
 def detect_ok_sign(landmarks):
     """Detect OK sign (thumb and index form circle)"""
@@ -392,8 +436,10 @@ def detect_peace_sign(landmarks):
     middle_mcp = landmarks[9]
     ring_tip = landmarks[16]
     ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
     pinky_tip = landmarks[20]
     pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
     
     def is_finger_extended(tip, pip, mcp):
         tip_y = tip["y"]
@@ -422,6 +468,9 @@ def detect_rock_on(landmarks):
     if len(landmarks) < 21:
         return False
     
+    thumb_tip = landmarks[4]
+    thumb_ip = landmarks[3]
+    thumb_mcp = landmarks[2]
     index_tip = landmarks[8]
     index_pip = landmarks[6]
     index_mcp = landmarks[5]
@@ -441,13 +490,190 @@ def detect_rock_on(landmarks):
         mcp_y = mcp["y"]
         return tip_y < pip_y < mcp_y
     
-    # Check if index and pinky are extended, middle and ring are not
+    def is_finger_folded(tip, pip, mcp):
+        # For a folded finger, tip should be below or close to pip
+        return tip["y"] >= pip["y"] - 0.02
+    
+    def is_thumb_folded():
+        # Thumb is folded if tip is not significantly above IP joint
+        return thumb_tip["y"] >= thumb_ip["y"] - 0.02
+    
+    # Check if index and pinky are extended, middle and ring are folded
+    index_extended = is_finger_extended(index_tip, index_pip, index_mcp)
+    middle_folded = is_finger_folded(middle_tip, middle_pip, middle_mcp)
+    ring_folded = is_finger_folded(ring_tip, ring_pip, ring_mcp)
+    pinky_extended = is_finger_extended(pinky_tip, pinky_pip, pinky_mcp)
+    thumb_folded = is_thumb_folded()
+    
+    # Calculate distance between extended fingers to ensure they're properly separated
+    finger_separation = calculate_distance(index_tip, pinky_tip)
+    
+    return (index_extended and 
+            pinky_extended and 
+            middle_folded and 
+            ring_folded and 
+            thumb_folded and
+            finger_separation > 0.08)  # Ensure fingers are properly separated
+
+def detect_number_one(landmarks):
+    """Detect number 1 (index finger extended)"""
+    if len(landmarks) < 21:
+        return False
+    
+    index_tip = landmarks[8]
+    index_pip = landmarks[6]
+    index_mcp = landmarks[5]
+    middle_tip = landmarks[12]
+    middle_pip = landmarks[10]
+    middle_mcp = landmarks[9]
+    ring_tip = landmarks[16]
+    ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
+    pinky_tip = landmarks[20]
+    pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
+    thumb_tip = landmarks[4]
+    thumb_ip = landmarks[3]
+    
+    def is_finger_extended(tip, pip, mcp):
+        return tip["y"] < pip["y"] < mcp["y"]
+    
+    def is_thumb_extended():
+        return thumb_tip["y"] < thumb_ip["y"]
+    
+    # Only index finger should be extended
     index_extended = is_finger_extended(index_tip, index_pip, index_mcp)
     middle_extended = is_finger_extended(middle_tip, middle_pip, middle_mcp)
     ring_extended = is_finger_extended(ring_tip, ring_pip, ring_mcp)
     pinky_extended = is_finger_extended(pinky_tip, pinky_pip, pinky_mcp)
+    thumb_extended = is_thumb_extended()
     
-    return index_extended and not middle_extended and not ring_extended and pinky_extended
+    return (index_extended and 
+            not middle_extended and 
+            not ring_extended and 
+            not pinky_extended and 
+            not thumb_extended)
+
+def detect_number_two(landmarks):
+    """Detect number 2 (index and middle fingers extended)"""
+    if len(landmarks) < 21:
+        return False
+    
+    index_tip = landmarks[8]
+    index_pip = landmarks[6]
+    index_mcp = landmarks[5]
+    middle_tip = landmarks[12]
+    middle_pip = landmarks[10]
+    middle_mcp = landmarks[9]
+    ring_tip = landmarks[16]
+    ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
+    pinky_tip = landmarks[20]
+    pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
+    thumb_tip = landmarks[4]
+    thumb_ip = landmarks[3]
+    
+    def is_finger_extended(tip, pip, mcp):
+        return tip["y"] < pip["y"] < mcp["y"]
+    
+    def is_thumb_extended():
+        return thumb_tip["y"] < thumb_ip["y"]
+    
+    # Index and middle should be extended, others not
+    index_extended = is_finger_extended(index_tip, index_pip, index_mcp)
+    middle_extended = is_finger_extended(middle_tip, middle_pip, middle_mcp)
+    ring_extended = is_finger_extended(ring_tip, ring_pip, ring_mcp)
+    pinky_extended = is_finger_extended(pinky_tip, pinky_pip, pinky_mcp)
+    thumb_extended = is_thumb_extended()
+    
+    # Check if fingers are reasonably separated (not too close together)
+    finger_distance = calculate_distance(index_tip, middle_tip)
+    
+    return (index_extended and 
+            middle_extended and 
+            not ring_extended and 
+            not pinky_extended and 
+            not thumb_extended and
+            finger_distance > 0.03)  # Fingers should be separated
+
+def detect_number_three(landmarks):
+    """Detect number 3 (index, middle, and ring fingers extended)"""
+    if len(landmarks) < 21:
+        return False
+    
+    index_tip = landmarks[8]
+    index_pip = landmarks[6]
+    index_mcp = landmarks[5]
+    middle_tip = landmarks[12]
+    middle_pip = landmarks[10]
+    middle_mcp = landmarks[9]
+    ring_tip = landmarks[16]
+    ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
+    pinky_tip = landmarks[20]
+    pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
+    thumb_tip = landmarks[4]
+    thumb_ip = landmarks[3]
+    
+    def is_finger_extended(tip, pip, mcp):
+        return tip["y"] < pip["y"] < mcp["y"]
+    
+    def is_thumb_extended():
+        return thumb_tip["y"] < thumb_ip["y"]
+    
+    # Index, middle, and ring should be extended, pinky and thumb not
+    index_extended = is_finger_extended(index_tip, index_pip, index_mcp)
+    middle_extended = is_finger_extended(middle_tip, middle_pip, middle_mcp)
+    ring_extended = is_finger_extended(ring_tip, ring_pip, ring_mcp)
+    pinky_extended = is_finger_extended(pinky_tip, pinky_pip, pinky_mcp)
+    thumb_extended = is_thumb_extended()
+    
+    return (index_extended and 
+            middle_extended and 
+            ring_extended and 
+            not pinky_extended and 
+            not thumb_extended)
+
+def detect_number_four(landmarks):
+    """Detect number 4 (all fingers except thumb extended)"""
+    if len(landmarks) < 21:
+        return False
+    
+    index_tip = landmarks[8]
+    index_pip = landmarks[6]
+    index_mcp = landmarks[5]
+    middle_tip = landmarks[12]
+    middle_pip = landmarks[10]
+    middle_mcp = landmarks[9]
+    ring_tip = landmarks[16]
+    ring_pip = landmarks[14]
+    ring_mcp = landmarks[13]
+    pinky_tip = landmarks[20]
+    pinky_pip = landmarks[18]
+    pinky_mcp = landmarks[17]
+    thumb_tip = landmarks[4]
+    thumb_ip = landmarks[3]
+    
+    def is_finger_extended(tip, pip, mcp):
+        return tip["y"] < pip["y"] < mcp["y"]
+    
+    def is_thumb_extended():
+        return thumb_tip["y"] < thumb_ip["y"]
+    
+    # All fingers except thumb should be extended
+    index_extended = is_finger_extended(index_tip, index_pip, index_mcp)
+    middle_extended = is_finger_extended(middle_tip, middle_pip, middle_mcp)
+    ring_extended = is_finger_extended(ring_tip, ring_pip, ring_mcp)
+    pinky_extended = is_finger_extended(pinky_tip, pinky_pip, pinky_mcp)
+    thumb_extended = is_thumb_extended()
+    
+    return (index_extended and 
+            middle_extended and 
+            ring_extended and 
+            pinky_extended and 
+            not thumb_extended)
 
 def calculate_confidence_score(extended_fingers, thumb_extended, landmarks):
     """Calculate confidence score based on landmark positions"""
